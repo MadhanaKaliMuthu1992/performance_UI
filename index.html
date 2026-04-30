@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JMeter Performance Runner</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --bg2: #f7f8fa;
+    --bg3: #f0f1f4;
+    --border: #e3e5ea;
+    --border2: #d0d3da;
+    --text: #111318;
+    --text2: #4a4f5c;
+    --muted: #8a909f;
+    --blue: #2563eb;
+    --blue-soft: #eff4ff;
+    --blue-border: #bfcffd;
+    --green: #16a34a;
+    --green-soft: #f0fdf4;
+    --green-border: #bbf7d0;
+    --red: #dc2626;
+    --red-soft: #fff1f1;
+    --red-border: #fecaca;
+    --yellow: #d97706;
+    --yellow-soft: #fffbeb;
+    --yellow-border: #fde68a;
+    --mono: 'DM Mono', 'Fira Code', monospace;
+    --sans: 'DM Sans', -apple-system, sans-serif;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow: 0 4px 12px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.04);
+    --radius: 10px;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* ── Layout ── */
+  .layout { display: grid; grid-template-columns: 300px 1fr; min-height: 100vh; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    background: var(--bg2);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar-header {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .brand { display: flex; align-items: center; gap: 10px; }
+  .brand-icon {
+    width: 34px; height: 34px; border-radius: 9px;
+    background: var(--blue);
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.3);
+    flex-shrink: 0;
+  }
+  .brand-icon svg { width: 16px; height: 16px; }
+  .brand-info h1 { font-size: 14px; font-weight: 600; letter-spacing: -0.2px; }
+  .brand-info p { font-size: 11px; color: var(--muted); margin-top: 1px; }
+
+  .sidebar-body { padding: 16px; flex: 1; overflow-y: auto; }
+  .sidebar-body::-webkit-scrollbar { width: 4px; }
+  .sidebar-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* ── Section Label ── */
+  .sec { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 8px; margin-top: 4px; }
+
+  /* ── Upload Zone ── */
+  .upload-zone {
+    border: 1.5px dashed var(--border2);
+    border-radius: var(--radius);
+    padding: 20px 16px;
+    text-align: center;
+    cursor: pointer;
+    position: relative;
+    transition: all 0.18s;
+    margin-bottom: 12px;
+    background: var(--bg);
+  }
+  .upload-zone:hover, .upload-zone.drag {
+    border-color: var(--blue);
+    background: var(--blue-soft);
+  }
+  .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .upload-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: var(--bg3); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 10px;
+  }
+  .upload-icon svg { width: 16px; height: 16px; color: var(--muted); }
+  .upload-zone .zt { font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 2px; }
+  .upload-zone .zs { font-size: 11px; color: var(--muted); }
+
+  .file-badge {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 10px;
+    background: var(--green-soft);
+    border: 1px solid var(--green-border);
+    border-radius: 8px;
+    font-size: 12px; color: var(--green);
+    margin-bottom: 14px;
+    font-weight: 500;
+  }
+  .file-badge svg { flex-shrink: 0; }
+
+  /* ── Fields ── */
+  .field { margin-bottom: 10px; }
+  .field label {
+    display: block; font-size: 11px; font-weight: 500;
+    color: var(--text2); margin-bottom: 4px;
+  }
+  .field input, .field select {
+    width: 100%; padding: 7px 10px;
+    background: var(--bg); border: 1px solid var(--border2);
+    border-radius: 7px; color: var(--text);
+    font-size: 12px; font-family: var(--mono);
+    outline: none; transition: border-color 0.15s, box-shadow 0.15s;
+    box-shadow: var(--shadow-sm);
+  }
+  .field input:focus, .field select:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.08);
+  }
+  .field .hint { font-size: 10px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+
+  .divider { height: 1px; background: var(--border); margin: 14px 0; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  /* ── Buttons ── */
+  .btn-run {
+    width: 100%; padding: 9px 16px;
+    background: var(--blue); color: #fff; border: none;
+    border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    box-shadow: 0 2px 8px rgba(37,99,235,0.25);
+    font-family: var(--sans);
+  }
+  .btn-run:hover { background: #1d4fd8; box-shadow: 0 4px 12px rgba(37,99,235,0.35); }
+  .btn-run:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+
+  .btn-stop {
+    width: 100%; padding: 8px 16px;
+    background: var(--red-soft); color: var(--red);
+    border: 1px solid var(--red-border);
+    border-radius: 8px; font-size: 13px; font-weight: 600;
+    cursor: pointer; display: none;
+    align-items: center; justify-content: center; gap: 7px;
+    margin-top: 7px; transition: all 0.15s;
+    font-family: var(--sans);
+  }
+  .btn-stop:hover { background: #fee2e2; }
+
+  /* ── Main ── */
+  .main { display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+
+  .main-header {
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px;
+    background: var(--bg);
+  }
+  .main-header h2 { font-size: 13px; font-weight: 500; color: var(--text2); }
+
+  .status-pill {
+    padding: 3px 10px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+    border: 1px solid var(--border); color: var(--muted);
+    background: var(--bg3);
+  }
+  .status-pill.running { background: var(--green-soft); border-color: var(--green-border); color: var(--green); }
+  .status-pill.done { background: var(--blue-soft); border-color: var(--blue-border); color: var(--blue); }
+  .status-pill.error { background: var(--red-soft); border-color: var(--red-border); color: var(--red); }
+
+  /* ── CMD Bar ── */
+  .cmd-bar {
+    padding: 9px 24px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .cmd-label {
+    font-size: 10px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.7px; white-space: nowrap;
+    background: var(--bg3); border: 1px solid var(--border);
+    padding: 2px 7px; border-radius: 4px;
+  }
+  .cmd-text {
+    font-family: var(--mono); font-size: 11px; color: var(--blue);
+    flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .copy-btn {
+    padding: 3px 10px; font-size: 11px; font-weight: 500;
+    background: var(--bg); border: 1px solid var(--border2);
+    border-radius: 5px; color: var(--text2); cursor: pointer;
+    white-space: nowrap; transition: all 0.15s;
+    box-shadow: var(--shadow-sm);
+  }
+  .copy-btn:hover { border-color: var(--blue); color: var(--blue); }
+
+  /* ── Metrics ── */
+  .metrics-bar {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+  .metric {
+    padding: 16px 24px;
+    border-right: 1px solid var(--border);
+    transition: background 0.2s;
+  }
+  .metric:last-child { border-right: none; }
+  .metric .ml {
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.6px; color: var(--muted); margin-bottom: 6px;
+  }
+  .metric .mv {
+    font-family: var(--mono); font-size: 22px; font-weight: 500;
+    color: var(--text); line-height: 1;
+  }
+  .metric .mu { font-size: 10px; color: var(--muted); margin-top: 4px; }
+  .metric.highlight .mv { color: var(--blue); }
+  .metric.danger { background: var(--red-soft); }
+  .metric.danger .mv { color: var(--red); }
+
+  /* ── Progress ── */
+  .progress-wrap { height: 2px; background: var(--bg3); }
+  .progress-fill {
+    height: 100%; background: linear-gradient(90deg, var(--blue), #60a5fa);
+    width: 0%; transition: width 0.8s linear;
+  }
+
+  /* ── Terminal ── */
+  .terminal-wrap {
+    flex: 1; display: flex; flex-direction: column; overflow: hidden;
+    background: #fafbfc;
+  }
+  .terminal-header {
+    padding: 8px 16px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+  }
+  .term-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border2); }
+  .term-dot.live { background: var(--green); animation: blink 1.2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
+  .term-title { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
+  .term-elapsed { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--muted); }
+
+  .terminal {
+    flex: 1; overflow-y: auto; padding: 14px 18px;
+    font-family: var(--mono); font-size: 11.5px; line-height: 1.75;
+    background: #fafbfc;
+  }
+  .terminal::-webkit-scrollbar { width: 5px; }
+  .terminal::-webkit-scrollbar-track { background: transparent; }
+  .terminal::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+  .log { color: var(--text2); }
+  .log.stdout { color: #374151; }
+  .log.stderr { color: var(--yellow); }
+  .log.ok { color: var(--green); }
+  .log.err { color: var(--red); }
+  .log.info { color: var(--blue); }
+  .log.cmd { color: var(--blue); font-weight: 500; }
+  .log .ts {
+    color: var(--muted); margin-right: 10px;
+    font-size: 10px; user-select: none;
+    background: var(--bg3); padding: 1px 5px;
+    border-radius: 3px; border: 1px solid var(--border);
+  }
+
+  /* ── Welcome ── */
+  .welcome {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    height: 100%; color: var(--muted);
+    text-align: center; padding: 40px;
+  }
+  .welcome-icon {
+    width: 64px; height: 64px; border-radius: 18px;
+    background: var(--bg3); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 20px; box-shadow: var(--shadow-sm);
+  }
+  .welcome-icon svg { width: 28px; height: 28px; }
+  .welcome h3 { font-size: 15px; font-weight: 600; color: var(--text2); margin-bottom: 8px; }
+  .welcome p { font-size: 12px; line-height: 1.7; max-width: 340px; color: var(--muted); }
+  .welcome p strong { color: var(--blue); font-weight: 600; }
+
+  /* PID label */
+  .pid-label { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--muted); background: var(--bg3); border: 1px solid var(--border); padding: 2px 8px; border-radius: 5px; }
+</style>
+</head>
+<body>
+<div class="layout">
+
+  <!-- ─── Sidebar ─── -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <rect x="1" y="8" width="3" height="6" rx="1" fill="white"/>
+            <rect x="6" y="5" width="3" height="9" rx="1" fill="white" opacity=".8"/>
+            <rect x="11" y="2" width="3" height="12" rx="1" fill="white" opacity=".6"/>
+          </svg>
+        </div>
+        <div class="brand-info">
+          <h1>JMeter Runner</h1>
+          <p>Upload · Configure · Execute</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-body">
+
+      <!-- Test Plan -->
+      <div class="sec">Test Plan</div>
+      <div class="upload-zone" id="dropZone">
+        <input type="file" accept=".jmx" id="jmxInput">
+        <div class="upload-icon">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M4 16s0-2 6-2 6 2 6 2M10 12V4m0 0L7 7m3-3 3 3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div class="zt">Drop .jmx file here</div>
+        <div class="zs">or click to browse</div>
+      </div>
+      <div class="file-badge" id="fileBadge" style="display:none">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.2"/><path d="M4 6.5l2 2 3-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        <span id="fileNameLabel">test.jmx</span>
+      </div>
+
+      <!-- JMeter Path -->
+      <div class="field">
+        <label>JMeter Executable Path</label>
+        <input type="text" id="jmeterPath" value="C:\apache-jmeter-5.6.3\bin\jmeter.bat" placeholder="/opt/jmeter/bin/jmeter">
+        <div class="hint">Full path to jmeter.bat (Windows) or jmeter (Linux/Mac)</div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Load Config -->
+      <div class="sec">Load Configuration</div>
+      <div class="grid2">
+        <div class="field">
+          <label>Threads</label>
+          <input type="number" id="threads" value="10" min="1">
+        </div>
+        <div class="field">
+          <label>Ramp-Up (s)</label>
+          <input type="number" id="rampup" value="30" min="0">
+        </div>
+        <div class="field">
+          <label>Duration (s)</label>
+          <input type="number" id="duration" value="60" min="1">
+        </div>
+        <div class="field">
+          <label>Loops</label>
+          <input type="number" id="loops" value="-1">
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Overrides -->
+      <div class="sec">Overrides <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:var(--muted)">(optional)</span></div>
+      <div class="grid2">
+        <div class="field">
+          <label>Host</label>
+          <input type="text" id="host" placeholder="api.example.com">
+        </div>
+        <div class="field">
+          <label>Port</label>
+          <input type="number" id="port" placeholder="8080">
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Output -->
+      <div class="sec">Output</div>
+      <div class="field">
+        <label>Results File (.jtl)</label>
+        <input type="text" id="resultFile" placeholder="auto (temp dir)">
+      </div>
+      <div class="field">
+        <label>Report Directory</label>
+        <input type="text" id="reportDir" placeholder="auto (temp dir)">
+      </div>
+
+      <div style="margin-top:18px">
+        <button class="btn-run" id="btnRun" onclick="startTest()">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2.5 2l9 4.5-9 4.5V2z" fill="white"/></svg>
+          Run JMeter Test
+        </button>
+        <button class="btn-stop" id="btnStop" onclick="stopTest()">
+          <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="2" y="2" width="7" height="7" rx="1.5" fill="currentColor"/></svg>
+          Stop Test
+        </button>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- ─── Main ─── -->
+  <div class="main">
+
+    <!-- Header -->
+    <div class="main-header">
+      <h2 id="runLabel">No test running</h2>
+      <div class="status-pill" id="statusPill">Idle</div>
+      <div class="pid-label" id="pidLabel" style="display:none"></div>
+    </div>
+
+    <!-- CMD Bar -->
+    <div class="cmd-bar" id="cmdBar">
+      <div class="cmd-label">CMD</div>
+      <div class="cmd-text" id="cmdDisplay">—</div>
+      <button class="copy-btn" onclick="copyCmd()">Copy</button>
+    </div>
+
+    <!-- Metrics -->
+    <div class="metrics-bar">
+      <div class="metric highlight">
+        <div class="ml">Throughput</div>
+        <div class="mv" id="mTp">—</div>
+        <div class="mu">req / sec</div>
+      </div>
+      <div class="metric">
+        <div class="ml">Avg Response</div>
+        <div class="mv" id="mRt">—</div>
+        <div class="mu">ms</div>
+      </div>
+      <div class="metric">
+        <div class="ml">Samples</div>
+        <div class="mv" id="mSamples">—</div>
+        <div class="mu">completed</div>
+      </div>
+      <div class="metric" id="mErrCard">
+        <div class="ml">Error Rate</div>
+        <div class="mv" id="mErr">—</div>
+        <div class="mu">%</div>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-fill" id="progressFill"></div>
+    </div>
+
+    <!-- Terminal -->
+    <div class="terminal-wrap">
+      <div class="terminal-header">
+        <div class="term-dot" id="termDot"></div>
+        <div class="term-title">Output Log</div>
+        <div class="term-elapsed" id="termElapsed"></div>
+      </div>
+      <div class="terminal" id="terminal">
+        <div class="welcome">
+          <div class="welcome-icon">
+            <svg viewBox="0 0 28 28" fill="none">
+              <rect x="2" y="14" width="5" height="10" rx="1.5" fill="#2563eb" opacity=".4"/>
+              <rect x="9" y="10" width="5" height="14" rx="1.5" fill="#2563eb" opacity=".65"/>
+              <rect x="16" y="6" width="5" height="18" rx="1.5" fill="#2563eb"/>
+              <rect x="23" y="11" width="3" height="3" rx="1" fill="#2563eb" opacity=".5"/>
+            </svg>
+          </div>
+          <h3>Ready to run</h3>
+          <p>Upload a <strong>.jmx</strong> test plan, configure your load parameters on the left, then click <strong>Run JMeter Test</strong>.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+let jmxFile = null;
+let currentCmd = '';
+let elapsedSec = 0;
+let elapsedTimer = null;
+let eventSource = null;
+let totalDuration = 60;
+
+const jmxInput = document.getElementById('jmxInput');
+const dropZone = document.getElementById('dropZone');
+
+jmxInput.addEventListener('change', e => setFile(e.target.files[0]));
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault(); dropZone.classList.remove('drag');
+  const f = e.dataTransfer.files[0];
+  if (f && f.name.endsWith('.jmx')) setFile(f);
+});
+
+function setFile(f) {
+  jmxFile = f;
+  document.getElementById('fileBadge').style.display = 'flex';
+  document.getElementById('fileNameLabel').textContent = f.name;
+}
+
+function ts() { return new Date().toTimeString().slice(0,8); }
+
+function log(msg, cls = 'stdout') {
+  const term = document.getElementById('terminal');
+  const welcome = term.querySelector('.welcome');
+  if (welcome) welcome.remove();
+  const lines = msg.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+  lines.forEach(line => {
+    if (!line.trim()) return;
+    const d = document.createElement('div');
+    d.className = 'log ' + cls;
+    d.innerHTML = `<span class="ts">${ts()}</span>${escHtml(line)}`;
+    term.appendChild(d);
+  });
+  term.scrollTop = term.scrollHeight;
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function parseMetrics(line) {
+  const tpMatch = line.match(/=\s*([\d.]+)\/s/);
+  const avgMatch = line.match(/Avg:\s*(\d+)/);
+  const errMatch = line.match(/Err:\s*\d+\s*\(([\d.]+)%\)/);
+  const samplesMatch = line.match(/summary [+\s=]+\s*(\d+)\s+in/);
+  if (tpMatch) document.getElementById('mTp').textContent = parseFloat(tpMatch[1]).toFixed(1);
+  if (avgMatch) document.getElementById('mRt').textContent = avgMatch[1];
+  if (errMatch) {
+    const ep = parseFloat(errMatch[1]);
+    document.getElementById('mErr').textContent = ep.toFixed(2);
+    document.getElementById('mErrCard').className = 'metric' + (ep > 1 ? ' danger' : '');
+  }
+  if (samplesMatch) document.getElementById('mSamples').textContent = parseInt(samplesMatch[1]).toLocaleString();
+}
+
+async function startTest() {
+  if (!jmxFile) { alert('Please select a .jmx file first.'); return; }
+
+  const formData = new FormData();
+  formData.append('jmx', jmxFile);
+  formData.append('threads', document.getElementById('threads').value);
+  formData.append('rampup', document.getElementById('rampup').value);
+  formData.append('duration', document.getElementById('duration').value);
+  formData.append('loops', document.getElementById('loops').value);
+  formData.append('host', document.getElementById('host').value);
+  formData.append('port', document.getElementById('port').value);
+  formData.append('jmeterPath', document.getElementById('jmeterPath').value);
+  formData.append('resultFile', document.getElementById('resultFile').value);
+  formData.append('reportDir', document.getElementById('reportDir').value);
+
+  totalDuration = parseInt(document.getElementById('duration').value) || 60;
+
+  document.getElementById('btnRun').disabled = true;
+  document.getElementById('btnStop').style.display = 'flex';
+  setStatus('running', 'Running');
+
+  document.getElementById('terminal').innerHTML = '';
+  ['mTp','mRt','mSamples','mErr'].forEach(id => document.getElementById(id).textContent = '—');
+  document.getElementById('progressFill').style.width = '0%';
+  document.getElementById('termDot').className = 'term-dot live';
+  document.getElementById('mErrCard').className = 'metric';
+
+  const resp = await fetch('/run', { method: 'POST', body: formData });
+  const data = await resp.json();
+
+  if (data.error) { log('Error: ' + data.error, 'err'); resetUI(); return; }
+
+  currentCmd = data.cmd;
+  document.getElementById('cmdDisplay').textContent = data.cmd;
+  document.getElementById('runLabel').textContent = jmxFile.name;
+  if (data.pid) {
+    const pidEl = document.getElementById('pidLabel');
+    pidEl.textContent = 'PID ' + data.pid;
+    pidEl.style.display = 'block';
+  }
+
+  log(`$ ${data.cmd}`, 'cmd');
+  log(`Results → ${data.jtlFile}`, 'info');
+  log(`Report  → ${data.reportOut}`, 'info');
+
+  elapsedSec = 0;
+  elapsedTimer = setInterval(() => {
+    elapsedSec++;
+    document.getElementById('termElapsed').textContent = fmtTime(elapsedSec);
+    const prog = Math.min((elapsedSec / totalDuration) * 100, 99);
+    document.getElementById('progressFill').style.width = prog + '%';
+  }, 1000);
+
+  if (eventSource) eventSource.close();
+  eventSource = new EventSource('/stream/' + data.runId);
+  eventSource.onmessage = e => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === 'start') {
+      document.getElementById('pidLabel').textContent = 'PID ' + msg.pid;
+      document.getElementById('pidLabel').style.display = 'block';
+    } else if (msg.type === 'stdout') {
+      log(msg.line, 'stdout'); parseMetrics(msg.line);
+    } else if (msg.type === 'stderr') {
+      log(msg.line, 'stderr'); parseMetrics(msg.line);
+    } else if (msg.type === 'done') {
+      clearInterval(elapsedTimer);
+      document.getElementById('progressFill').style.width = '100%';
+      document.getElementById('termDot').className = 'term-dot';
+      if (msg.code === 0) {
+        setStatus('done', 'Completed');
+        log('✓ Test completed successfully (exit 0)', 'ok');
+        log(`Results: ${msg.jtlFile}`, 'info');
+        log(`Report:  ${msg.reportOut}`, 'info');
+      } else {
+        setStatus('error', 'Failed (exit ' + msg.code + ')');
+        log(`✗ JMeter exited with code ${msg.code}`, 'err');
+      }
+      resetUI(); eventSource.close();
+    } else if (msg.type === 'error') {
+      setStatus('error', 'Error');
+      log(msg.message, 'err');
+      log('Troubleshooting:', 'info');
+      log('  1. Install JMeter: https://jmeter.apache.org/download_jmeter.cgi', 'info');
+      log('  2. Verify Java 8+: java -version', 'info');
+      log('  3. Set full JMeter path in the sidebar field', 'info');
+      resetUI(); eventSource.close();
+    }
+  };
+}
+
+async function stopTest() {
+  await fetch('/stop', { method: 'POST' });
+  setStatus('error', 'Stopped');
+  log('Test stopped by user.', 'err');
+  clearInterval(elapsedTimer);
+  document.getElementById('termDot').className = 'term-dot';
+  resetUI();
+  if (eventSource) eventSource.close();
+}
+
+function resetUI() {
+  document.getElementById('btnRun').disabled = false;
+  document.getElementById('btnStop').style.display = 'none';
+}
+
+function setStatus(cls, text) {
+  const el = document.getElementById('statusPill');
+  el.className = 'status-pill ' + cls;
+  el.textContent = text;
+}
+
+function fmtTime(s) {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return m > 0 ? `${m}m ${sec}s` : `${sec}s`;
+}
+
+function copyCmd() {
+  if (!currentCmd) return;
+  navigator.clipboard.writeText(currentCmd);
+  const btn = event.target;
+  btn.textContent = 'Copied!';
+  setTimeout(() => btn.textContent = 'Copy', 2000);
+}
+</script>
+</body>
+</html>
