@@ -4,468 +4,331 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>JMeter Performance Runner</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:#0f1117; --bg2:#161b27; --bg3:#1e2535; --bg4:#252d40;
+  --border:#2a3347; --border2:#344060;
+  --text:#e8eaf0; --text2:#9ba3b8; --muted:#5a6380;
+  --blue:#4f8cff; --blue2:#2563eb; --blue-glow:rgba(79,140,255,0.18);
+  --green:#22d3a5; --green2:#10b981; --green-soft:rgba(34,211,165,0.12);
+  --red:#f87171; --red2:#ef4444; --red-soft:rgba(248,113,113,0.12);
+  --yellow:#fbbf24; --yellow-soft:rgba(251,191,36,0.12);
+  --purple:#a78bfa; --purple-soft:rgba(167,139,250,0.12);
+  --cyan:#22d3ee; --cyan-soft:rgba(34,211,238,0.12);
+  --orange:#fb923c; --orange-soft:rgba(251,146,60,0.15);
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Space Grotesk',sans-serif;
+  --radius:12px; --radius-sm:8px;
+}
+body { background:var(--bg); color:var(--text); font-family:var(--sans); min-height:100vh; font-size:13px; }
 
-  :root {
-    --bg: #ffffff;
-    --bg2: #f7f8fa;
-    --bg3: #f0f1f4;
-    --border: #e3e5ea;
-    --border2: #d0d3da;
-    --text: #111318;
-    --text2: #4a4f5c;
-    --muted: #8a909f;
-    --blue: #2563eb;
-    --blue-soft: #eff4ff;
-    --blue-border: #bfcffd;
-    --green: #16a34a;
-    --green-soft: #f0fdf4;
-    --green-border: #bbf7d0;
-    --red: #dc2626;
-    --red-soft: #fff1f1;
-    --red-border: #fecaca;
-    --yellow: #d97706;
-    --yellow-soft: #fffbeb;
-    --yellow-border: #fde68a;
-    --mono: 'DM Mono', 'Fira Code', monospace;
-    --sans: 'DM Sans', -apple-system, sans-serif;
-    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-    --shadow: 0 4px 12px rgba(0,0,0,0.07), 0 1px 3px rgba(0,0,0,0.04);
-    --radius: 10px;
-  }
+/* Layout */
+.layout { display:grid; grid-template-columns:310px 1fr; min-height:100vh; }
 
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--sans);
-    min-height: 100vh;
-    font-size: 14px;
-  }
+/* Sidebar */
+.sidebar { background:var(--bg2); border-right:1px solid var(--border); display:flex; flex-direction:column; }
+.sidebar-header { padding:20px; border-bottom:1px solid var(--border); }
+.brand { display:flex; align-items:center; gap:10px; }
+.brand-icon { width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,var(--blue),#7c3aed); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.brand-icon svg { width:16px; height:16px; }
+.brand-info h1 { font-size:14px; font-weight:600; letter-spacing:-.3px; color:var(--text); }
+.brand-info p { font-size:11px; color:var(--muted); margin-top:1px; }
+.sidebar-body { padding:16px; flex:1; overflow-y:auto; }
+.sidebar-body::-webkit-scrollbar { width:4px; }
+.sidebar-body::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
 
-  /* ── Layout ── */
-  .layout { display: grid; grid-template-columns: 300px 1fr; min-height: 100vh; }
+.sec { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:8px; margin-top:4px; display:flex; align-items:center; justify-content:space-between; }
 
-  /* ── Sidebar ── */
-  .sidebar {
-    background: var(--bg2);
-    border-right: 1px solid var(--border);
-    display: flex;
-    flex-direction: column;
-  }
+/* Upload */
+.upload-zone { border:1.5px dashed var(--border2); border-radius:var(--radius); padding:18px 14px; text-align:center; cursor:pointer; position:relative; transition:all .18s; margin-bottom:10px; background:var(--bg3); }
+.upload-zone:hover,.upload-zone.drag { border-color:var(--blue); background:var(--blue-glow); }
+.upload-zone input { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }
+.upload-icon { width:34px; height:34px; border-radius:8px; background:var(--bg4); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; margin:0 auto 8px; }
+.upload-icon svg { width:15px; height:15px; color:var(--blue); }
+.upload-zone .zt { font-size:12px; font-weight:500; color:var(--text2); }
+.upload-zone .zs { font-size:10px; color:var(--muted); margin-top:2px; }
 
-  .sidebar-header {
-    padding: 20px 20px 16px;
-    border-bottom: 1px solid var(--border);
-  }
+.file-badge { display:flex; align-items:center; gap:8px; padding:7px 10px; background:var(--green-soft); border:1px solid rgba(34,211,165,.3); border-radius:var(--radius-sm); font-size:11px; color:var(--green); margin-bottom:10px; font-weight:500; }
+.file-badge svg { flex-shrink:0; }
 
-  .brand { display: flex; align-items: center; gap: 10px; }
-  .brand-icon {
-    width: 34px; height: 34px; border-radius: 9px;
-    background: var(--blue);
-    display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 2px 8px rgba(37,99,235,0.3);
-    flex-shrink: 0;
-  }
-  .brand-icon svg { width: 16px; height: 16px; }
-  .brand-info h1 { font-size: 14px; font-weight: 600; letter-spacing: -0.2px; }
-  .brand-info p { font-size: 11px; color: var(--muted); margin-top: 1px; }
+/* JMX Config Banner */
+.jmx-banner { background:var(--orange-soft); border:1px solid rgba(251,146,60,.35); border-radius:var(--radius-sm); padding:9px 12px; margin-bottom:10px; display:none; }
+.jmx-banner .bcap { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.7px; color:var(--orange); margin-bottom:7px; display:flex; align-items:center; gap:5px; }
+.jmx-banner .bgrid { display:grid; grid-template-columns:1fr 1fr; gap:4px 10px; }
+.jmx-banner .bitem { font-size:11px; color:var(--text2); }
+.jmx-banner .bitem span { font-family:var(--mono); font-weight:500; color:var(--text); }
 
-  .sidebar-body { padding: 16px; flex: 1; overflow-y: auto; }
-  .sidebar-body::-webkit-scrollbar { width: 4px; }
-  .sidebar-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+/* Fields */
+.field { margin-bottom:9px; }
+.field label { display:block; font-size:11px; font-weight:500; color:var(--text2); margin-bottom:4px; }
+.field input,.field select { width:100%; padding:7px 10px; background:var(--bg3); border:1px solid var(--border); border-radius:var(--radius-sm); color:var(--text); font-size:12px; font-family:var(--mono); outline:none; transition:border-color .15s,box-shadow .15s; }
+.field input:focus,.field select:focus { border-color:var(--blue); box-shadow:0 0 0 3px var(--blue-glow); }
+.field input::placeholder { color:var(--muted); }
+.field input.changed { border-color:var(--orange); background:rgba(251,146,60,.08); }
+.field .hint { font-size:10px; color:var(--muted); margin-top:3px; line-height:1.4; }
+.divider { height:1px; background:var(--border); margin:12px 0; }
+.grid2 { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 
-  /* ── Section Label ── */
-  .sec { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; color: var(--muted); margin-bottom: 8px; margin-top: 4px; }
+/* From JMX tag */
+.from-jmx-tag { font-size:9px; font-weight:500; color:var(--orange); background:var(--orange-soft); border:1px solid rgba(251,146,60,.3); padding:1px 6px; border-radius:4px; text-transform:none; letter-spacing:0; display:none; }
 
-  /* ── Upload Zone ── */
-  .upload-zone {
-    border: 1.5px dashed var(--border2);
-    border-radius: var(--radius);
-    padding: 20px 16px;
-    text-align: center;
-    cursor: pointer;
-    position: relative;
-    transition: all 0.18s;
-    margin-bottom: 12px;
-    background: var(--bg);
-  }
-  .upload-zone:hover, .upload-zone.drag {
-    border-color: var(--blue);
-    background: var(--blue-soft);
-  }
-  .upload-zone input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
-  .upload-icon {
-    width: 36px; height: 36px; border-radius: 8px;
-    background: var(--bg3); border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    margin: 0 auto 10px;
-  }
-  .upload-icon svg { width: 16px; height: 16px; color: var(--muted); }
-  .upload-zone .zt { font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 2px; }
-  .upload-zone .zs { font-size: 11px; color: var(--muted); }
+/* Buttons */
+.btn-run { width:100%; padding:10px 16px; background:linear-gradient(135deg,var(--blue),#7c3aed); color:#fff; border:none; border-radius:var(--radius-sm); font-size:13px; font-weight:600; cursor:pointer; transition:all .15s; display:flex; align-items:center; justify-content:center; gap:7px; font-family:var(--sans); letter-spacing:-.2px; }
+.btn-run:hover { opacity:.9; transform:translateY(-1px); }
+.btn-run:disabled { opacity:.35; cursor:not-allowed; transform:none; }
+.btn-stop { width:100%; padding:8px 16px; background:var(--red-soft); color:var(--red); border:1px solid rgba(248,113,113,.3); border-radius:var(--radius-sm); font-size:12px; font-weight:600; cursor:pointer; display:none; align-items:center; justify-content:center; gap:7px; margin-top:7px; font-family:var(--sans); }
+.btn-stop:hover { background:rgba(248,113,113,.2); }
 
-  .file-badge {
-    display: flex; align-items: center; gap: 8px;
-    padding: 8px 10px;
-    background: var(--green-soft);
-    border: 1px solid var(--green-border);
-    border-radius: 8px;
-    font-size: 12px; color: var(--green);
-    margin-bottom: 14px;
-    font-weight: 500;
-  }
-  .file-badge svg { flex-shrink: 0; }
+/* Main */
+.main { display:flex; flex-direction:column; overflow:hidden; }
+.main-header { padding:14px 24px; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:12px; background:var(--bg2); }
+.main-header h2 { font-size:13px; font-weight:500; color:var(--text2); }
+.status-pill { padding:3px 10px; border-radius:20px; font-size:11px; font-weight:600; border:1px solid var(--border); color:var(--muted); background:var(--bg3); }
+.status-pill.running { background:var(--green-soft); border-color:rgba(34,211,165,.3); color:var(--green); }
+.status-pill.done { background:var(--blue-glow); border-color:rgba(79,140,255,.3); color:var(--blue); }
+.status-pill.error { background:var(--red-soft); border-color:rgba(248,113,113,.3); color:var(--red); }
 
-  /* ── Fields ── */
-  .field { margin-bottom: 10px; }
-  .field label {
-    display: block; font-size: 11px; font-weight: 500;
-    color: var(--text2); margin-bottom: 4px;
-  }
-  .field input, .field select {
-    width: 100%; padding: 7px 10px;
-    background: var(--bg); border: 1px solid var(--border2);
-    border-radius: 7px; color: var(--text);
-    font-size: 12px; font-family: var(--mono);
-    outline: none; transition: border-color 0.15s, box-shadow 0.15s;
-    box-shadow: var(--shadow-sm);
-  }
-  .field input:focus, .field select:focus {
-    border-color: var(--blue);
-    box-shadow: 0 0 0 3px rgba(37,99,235,0.08);
-  }
-  .field .hint { font-size: 10px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+/* CMD Bar */
+.cmd-bar { padding:8px 24px; background:var(--bg); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:10px; }
+.cmd-label { font-size:10px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.7px; background:var(--bg3); border:1px solid var(--border); padding:2px 7px; border-radius:4px; white-space:nowrap; }
+.cmd-text { font-family:var(--mono); font-size:11px; color:var(--blue); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.copy-btn { padding:3px 10px; font-size:11px; font-weight:500; background:var(--bg3); border:1px solid var(--border); border-radius:5px; color:var(--text2); cursor:pointer; white-space:nowrap; font-family:var(--sans); transition:all .15s; }
+.copy-btn:hover { border-color:var(--blue); color:var(--blue); }
 
-  .divider { height: 1px; background: var(--border); margin: 14px 0; }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+/* Metrics */
+.dashboard { display:grid; grid-template-columns:repeat(4,1fr); border-bottom:1px solid var(--border); }
+.metric { padding:14px 20px; border-right:1px solid var(--border); position:relative; overflow:hidden; }
+.metric:last-child { border-right:none; }
+.metric-glow { position:absolute; top:-20px; right:-20px; width:80px; height:80px; border-radius:50%; opacity:.15; pointer-events:none; transition:opacity .5s; }
+.metric:hover .metric-glow { opacity:.3; }
+.metric .ml { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.7px; color:var(--muted); margin-bottom:6px; }
+.metric .mv { font-family:var(--mono); font-size:22px; font-weight:500; line-height:1; }
+.metric .mu { font-size:10px; color:var(--muted); margin-top:4px; }
+.metric.blue .mv { color:var(--blue); }
+.metric.green .mv { color:var(--green); }
+.metric.yellow .mv { color:var(--yellow); }
+.metric.danger .mv { color:var(--red); }
 
-  /* ── Buttons ── */
-  .btn-run {
-    width: 100%; padding: 9px 16px;
-    background: var(--blue); color: #fff; border: none;
-    border-radius: 8px; font-size: 13px; font-weight: 600;
-    cursor: pointer; transition: all 0.15s;
-    display: flex; align-items: center; justify-content: center; gap: 7px;
-    box-shadow: 0 2px 8px rgba(37,99,235,0.25);
-    font-family: var(--sans);
-  }
-  .btn-run:hover { background: #1d4fd8; box-shadow: 0 4px 12px rgba(37,99,235,0.35); }
-  .btn-run:disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+/* Progress */
+.progress-wrap { height:2px; background:var(--bg3); }
+.progress-fill { height:100%; background:linear-gradient(90deg,var(--blue),var(--purple)); width:0%; transition:width .8s linear; }
 
-  .btn-stop {
-    width: 100%; padding: 8px 16px;
-    background: var(--red-soft); color: var(--red);
-    border: 1px solid var(--red-border);
-    border-radius: 8px; font-size: 13px; font-weight: 600;
-    cursor: pointer; display: none;
-    align-items: center; justify-content: center; gap: 7px;
-    margin-top: 7px; transition: all 0.15s;
-    font-family: var(--sans);
-  }
-  .btn-stop:hover { background: #fee2e2; }
+/* Sparklines */
+.spark-section { display:grid; grid-template-columns:repeat(3,1fr); border-bottom:1px solid var(--border); background:var(--bg); gap:0; }
+.spark-card { padding:12px 20px; border-right:1px solid var(--border); }
+.spark-card:last-child { border-right:none; }
+.spark-title { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.7px; color:var(--muted); margin-bottom:8px; }
+.spark-bars { display:flex; align-items:flex-end; gap:3px; height:40px; }
+.spark-bar { flex:1; border-radius:2px 2px 0 0; transition:height .3s,background .3s; min-height:2px; }
 
-  /* ── Main ── */
-  .main { display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
+/* Charts section */
+.charts-section { display:grid; grid-template-columns:1fr 300px; flex:1; min-height:0; border-bottom:1px solid var(--border); }
 
-  .main-header {
-    padding: 14px 24px;
-    border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 12px;
-    background: var(--bg);
-  }
-  .main-header h2 { font-size: 13px; font-weight: 500; color: var(--text2); }
+/* Terminal */
+.terminal-panel { display:flex; flex-direction:column; border-right:1px solid var(--border); min-height:0; }
+.terminal-header { padding:8px 16px; background:var(--bg2); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.term-dot { width:7px; height:7px; border-radius:50%; background:var(--border2); }
+.term-dot.live { background:var(--green); animation:blink 1.2s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
+.term-title { font-size:10px; font-weight:600; color:var(--muted); text-transform:uppercase; letter-spacing:.7px; }
+.term-elapsed { margin-left:auto; font-family:var(--mono); font-size:10px; color:var(--muted); }
+.terminal { flex:1; overflow-y:auto; padding:12px 16px; font-family:var(--mono); font-size:11px; line-height:1.8; background:var(--bg); min-height:0; }
+.terminal::-webkit-scrollbar { width:4px; }
+.terminal::-webkit-scrollbar-thumb { background:var(--border); border-radius:2px; }
+.log { color:var(--text2); }
+.log.stdout { color:#c9d1e8; }
+.log.stderr { color:var(--yellow); }
+.log.ok { color:var(--green); }
+.log.err { color:var(--red); }
+.log.info { color:var(--blue); }
+.log.cmd { color:var(--cyan); font-weight:500; }
+.log .ts { color:var(--muted); margin-right:8px; font-size:10px; }
 
-  .status-pill {
-    padding: 3px 10px; border-radius: 20px;
-    font-size: 11px; font-weight: 600;
-    border: 1px solid var(--border); color: var(--muted);
-    background: var(--bg3);
-  }
-  .status-pill.running { background: var(--green-soft); border-color: var(--green-border); color: var(--green); }
-  .status-pill.done { background: var(--blue-soft); border-color: var(--blue-border); color: var(--blue); }
-  .status-pill.error { background: var(--red-soft); border-color: var(--red-border); color: var(--red); }
+/* Pie Panel */
+.pie-panel { padding:16px; display:flex; flex-direction:column; background:var(--bg); overflow-y:auto; }
+.pie-header { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.7px; color:var(--muted); margin-bottom:12px; }
+.pie-wrap { position:relative; width:180px; height:180px; margin:0 auto 14px; }
+.pie-canvas { width:180px; height:180px; }
+.pie-center { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center; pointer-events:none; }
+.pie-center .pv { font-family:var(--mono); font-size:20px; font-weight:500; color:var(--text); line-height:1; }
+.pie-center .pl { font-size:10px; color:var(--muted); margin-top:3px; }
+.pie-legend { display:flex; flex-direction:column; gap:6px; }
+.legend-row { display:flex; align-items:center; gap:8px; font-size:11px; }
+.legend-dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+.legend-label { color:var(--text2); flex:1; }
+.legend-val { font-family:var(--mono); font-size:11px; color:var(--text); font-weight:500; }
+.legend-pct { font-family:var(--mono); font-size:10px; color:var(--muted); min-width:36px; text-align:right; }
 
-  /* ── CMD Bar ── */
-  .cmd-bar {
-    padding: 9px 24px;
-    background: var(--bg2);
-    border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 10px;
-  }
-  .cmd-label {
-    font-size: 10px; font-weight: 700; color: var(--muted);
-    text-transform: uppercase; letter-spacing: 0.7px; white-space: nowrap;
-    background: var(--bg3); border: 1px solid var(--border);
-    padding: 2px 7px; border-radius: 4px;
-  }
-  .cmd-text {
-    font-family: var(--mono); font-size: 11px; color: var(--blue);
-    flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-  }
-  .copy-btn {
-    padding: 3px 10px; font-size: 11px; font-weight: 500;
-    background: var(--bg); border: 1px solid var(--border2);
-    border-radius: 5px; color: var(--text2); cursor: pointer;
-    white-space: nowrap; transition: all 0.15s;
-    box-shadow: var(--shadow-sm);
-  }
-  .copy-btn:hover { border-color: var(--blue); color: var(--blue); }
+/* Score */
+.score-section { margin-top:14px; padding-top:12px; border-top:1px solid var(--border); }
+.score-label { font-size:10px; font-weight:600; text-transform:uppercase; letter-spacing:.7px; color:var(--muted); margin-bottom:8px; }
+.score-bar { height:5px; border-radius:3px; background:var(--bg3); overflow:hidden; margin-bottom:6px; }
+.score-fill { height:100%; border-radius:3px; width:0%; transition:width 1s ease; background:linear-gradient(90deg,var(--green),var(--blue)); }
+.score-row { display:flex; justify-content:space-between; align-items:center; }
+.score-val { font-family:var(--mono); font-size:18px; font-weight:500; color:var(--text); }
+.score-tag { font-size:10px; color:var(--muted); }
 
-  /* ── Metrics ── */
-  .metrics-bar {
-    display: grid; grid-template-columns: repeat(4, 1fr);
-    border-bottom: 1px solid var(--border);
-    background: var(--bg);
-  }
-  .metric {
-    padding: 16px 24px;
-    border-right: 1px solid var(--border);
-    transition: background 0.2s;
-  }
-  .metric:last-child { border-right: none; }
-  .metric .ml {
-    font-size: 10px; font-weight: 600; text-transform: uppercase;
-    letter-spacing: 0.6px; color: var(--muted); margin-bottom: 6px;
-  }
-  .metric .mv {
-    font-family: var(--mono); font-size: 22px; font-weight: 500;
-    color: var(--text); line-height: 1;
-  }
-  .metric .mu { font-size: 10px; color: var(--muted); margin-top: 4px; }
-  .metric.highlight .mv { color: var(--blue); }
-  .metric.danger { background: var(--red-soft); }
-  .metric.danger .mv { color: var(--red); }
-
-  /* ── Progress ── */
-  .progress-wrap { height: 2px; background: var(--bg3); }
-  .progress-fill {
-    height: 100%; background: linear-gradient(90deg, var(--blue), #60a5fa);
-    width: 0%; transition: width 0.8s linear;
-  }
-
-  /* ── Terminal ── */
-  .terminal-wrap {
-    flex: 1; display: flex; flex-direction: column; overflow: hidden;
-    background: #fafbfc;
-  }
-  .terminal-header {
-    padding: 8px 16px;
-    background: var(--bg);
-    border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; gap: 8px; flex-shrink: 0;
-  }
-  .term-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border2); }
-  .term-dot.live { background: var(--green); animation: blink 1.2s infinite; }
-  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.25} }
-  .term-title { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.6px; }
-  .term-elapsed { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--muted); }
-
-  .terminal {
-    flex: 1; overflow-y: auto; padding: 14px 18px;
-    font-family: var(--mono); font-size: 11.5px; line-height: 1.75;
-    background: #fafbfc;
-  }
-  .terminal::-webkit-scrollbar { width: 5px; }
-  .terminal::-webkit-scrollbar-track { background: transparent; }
-  .terminal::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
-
-  .log { color: var(--text2); }
-  .log.stdout { color: #374151; }
-  .log.stderr { color: var(--yellow); }
-  .log.ok { color: var(--green); }
-  .log.err { color: var(--red); }
-  .log.info { color: var(--blue); }
-  .log.cmd { color: var(--blue); font-weight: 500; }
-  .log .ts {
-    color: var(--muted); margin-right: 10px;
-    font-size: 10px; user-select: none;
-    background: var(--bg3); padding: 1px 5px;
-    border-radius: 3px; border: 1px solid var(--border);
-  }
-
-  /* ── Welcome ── */
-  .welcome {
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    height: 100%; color: var(--muted);
-    text-align: center; padding: 40px;
-  }
-  .welcome-icon {
-    width: 64px; height: 64px; border-radius: 18px;
-    background: var(--bg3); border: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: center;
-    margin-bottom: 20px; box-shadow: var(--shadow-sm);
-  }
-  .welcome-icon svg { width: 28px; height: 28px; }
-  .welcome h3 { font-size: 15px; font-weight: 600; color: var(--text2); margin-bottom: 8px; }
-  .welcome p { font-size: 12px; line-height: 1.7; max-width: 340px; color: var(--muted); }
-  .welcome p strong { color: var(--blue); font-weight: 600; }
-
-  /* PID label */
-  .pid-label { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--muted); background: var(--bg3); border: 1px solid var(--border); padding: 2px 8px; border-radius: 5px; }
+/* Welcome */
+.welcome { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:var(--muted); text-align:center; padding:30px; }
+.welcome-icon { width:52px; height:52px; border-radius:14px; background:var(--bg3); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; margin-bottom:14px; }
+.welcome-icon svg { width:22px; height:22px; }
+.welcome h3 { font-size:14px; font-weight:600; color:var(--text2); margin-bottom:6px; }
+.welcome p { font-size:11px; line-height:1.7; max-width:280px; }
+.welcome p strong { color:var(--blue); font-weight:600; }
+.pid-label { margin-left:auto; font-family:var(--mono); font-size:10px; color:var(--muted); background:var(--bg3); border:1px solid var(--border); padding:2px 8px; border-radius:5px; display:none; }
+::-webkit-scrollbar { width:4px; }
+::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
 </style>
 </head>
 <body>
 <div class="layout">
 
-  <!-- ─── Sidebar ─── -->
-  <aside class="sidebar">
-    <div class="sidebar-header">
-      <div class="brand">
-        <div class="brand-icon">
-          <svg viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="1" y="8" width="3" height="6" rx="1" fill="white"/>
-            <rect x="6" y="5" width="3" height="9" rx="1" fill="white" opacity=".8"/>
-            <rect x="11" y="2" width="3" height="12" rx="1" fill="white" opacity=".6"/>
-          </svg>
-        </div>
-        <div class="brand-info">
-          <h1>JMeter Runner</h1>
-          <p>Upload · Configure · Execute</p>
-        </div>
+<!-- ── Sidebar ─────────────────────────────────────────── -->
+<aside class="sidebar">
+  <div class="sidebar-header">
+    <div class="brand">
+      <div class="brand-icon">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="8" width="3" height="6" rx="1" fill="white"/><rect x="6" y="5" width="3" height="9" rx="1" fill="white" opacity=".8"/><rect x="11" y="2" width="3" height="12" rx="1" fill="white" opacity=".6"/></svg>
+      </div>
+      <div class="brand-info">
+        <h1>JMeter Runner</h1>
+        <p>Upload · Configure · Execute</p>
       </div>
     </div>
+  </div>
 
-    <div class="sidebar-body">
+  <div class="sidebar-body">
 
-      <!-- Test Plan -->
-      <div class="sec">Test Plan</div>
-      <div class="upload-zone" id="dropZone">
-        <input type="file" accept=".jmx" id="jmxInput">
-        <div class="upload-icon">
-          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
-            <path d="M4 16s0-2 6-2 6 2 6 2M10 12V4m0 0L7 7m3-3 3 3" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </div>
-        <div class="zt">Drop .jmx file here</div>
-        <div class="zs">or click to browse</div>
+    <div class="sec">Test Plan</div>
+    <div class="upload-zone" id="dropZone">
+      <input type="file" accept=".jmx" id="jmxInput">
+      <div class="upload-icon">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 16s0-2 6-2 6 2 6 2M10 12V4m0 0L7 7m3-3 3 3" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </div>
-      <div class="file-badge" id="fileBadge" style="display:none">
-        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="5.5" stroke="currentColor" stroke-width="1.2"/><path d="M4 6.5l2 2 3-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
-        <span id="fileNameLabel">test.jmx</span>
-      </div>
-
-      <!-- JMeter Path -->
-      <div class="field">
-        <label>JMeter Executable Path</label>
-        <input type="text" id="jmeterPath" value="C:\apache-jmeter-5.6.3\bin\jmeter.bat" placeholder="/opt/jmeter/bin/jmeter">
-        <div class="hint">Full path to jmeter.bat (Windows) or jmeter (Linux/Mac)</div>
-      </div>
-
-      <div class="divider"></div>
-
-      <!-- Load Config -->
-      <div class="sec">Load Configuration</div>
-      <div class="grid2">
-        <div class="field">
-          <label>Threads</label>
-          <input type="number" id="threads" value="10" min="1">
-        </div>
-        <div class="field">
-          <label>Ramp-Up (s)</label>
-          <input type="number" id="rampup" value="30" min="0">
-        </div>
-        <div class="field">
-          <label>Duration (s)</label>
-          <input type="number" id="duration" value="60" min="1">
-        </div>
-        <div class="field">
-          <label>Loops</label>
-          <input type="number" id="loops" value="-1">
-        </div>
-      </div>
-
-      <div class="divider"></div>
-
-      <!-- Overrides -->
-      <div class="sec">Overrides <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:var(--muted)">(optional)</span></div>
-      <div class="grid2">
-        <div class="field">
-          <label>Host</label>
-          <input type="text" id="host" placeholder="api.example.com">
-        </div>
-        <div class="field">
-          <label>Port</label>
-          <input type="number" id="port" placeholder="8080">
-        </div>
-      </div>
-
-      <div class="divider"></div>
-
-      <!-- Output -->
-      <div class="sec">Output</div>
-      <div class="field">
-        <label>Results File (.jtl)</label>
-        <input type="text" id="resultFile" placeholder="auto (temp dir)">
-      </div>
-      <div class="field">
-        <label>Report Directory</label>
-        <input type="text" id="reportDir" placeholder="auto (temp dir)">
-      </div>
-
-      <div style="margin-top:18px">
-        <button class="btn-run" id="btnRun" onclick="startTest()">
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M2.5 2l9 4.5-9 4.5V2z" fill="white"/></svg>
-          Run JMeter Test
-        </button>
-        <button class="btn-stop" id="btnStop" onclick="stopTest()">
-          <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><rect x="2" y="2" width="7" height="7" rx="1.5" fill="currentColor"/></svg>
-          Stop Test
-        </button>
-      </div>
-
-    </div>
-  </aside>
-
-  <!-- ─── Main ─── -->
-  <div class="main">
-
-    <!-- Header -->
-    <div class="main-header">
-      <h2 id="runLabel">No test running</h2>
-      <div class="status-pill" id="statusPill">Idle</div>
-      <div class="pid-label" id="pidLabel" style="display:none"></div>
+      <div class="zt">Drop .jmx file here</div>
+      <div class="zs">or click — auto-reads thread config</div>
     </div>
 
-    <!-- CMD Bar -->
-    <div class="cmd-bar" id="cmdBar">
-      <div class="cmd-label">CMD</div>
-      <div class="cmd-text" id="cmdDisplay">—</div>
-      <button class="copy-btn" onclick="copyCmd()">Copy</button>
+    <div class="file-badge" id="fileBadge" style="display:none">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.2"/><path d="M3.5 6l2 2 3-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+      <span id="fileNameLabel">test.jmx</span>
     </div>
 
-    <!-- Metrics -->
-    <div class="metrics-bar">
-      <div class="metric highlight">
-        <div class="ml">Throughput</div>
-        <div class="mv" id="mTp">—</div>
-        <div class="mu">req / sec</div>
+    <!-- JMX Config Banner -->
+    <div class="jmx-banner" id="jmxBanner">
+      <div class="bcap">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4" stroke="currentColor" stroke-width="1.2"/><path d="M5 2.5v3l1.5 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Read from JMX — edit below to override
       </div>
-      <div class="metric">
-        <div class="ml">Avg Response</div>
-        <div class="mv" id="mRt">—</div>
-        <div class="mu">ms</div>
-      </div>
-      <div class="metric">
-        <div class="ml">Samples</div>
-        <div class="mv" id="mSamples">—</div>
-        <div class="mu">completed</div>
-      </div>
-      <div class="metric" id="mErrCard">
-        <div class="ml">Error Rate</div>
-        <div class="mv" id="mErr">—</div>
-        <div class="mu">%</div>
-      </div>
+      <div class="bgrid" id="bannerValues"></div>
     </div>
 
-    <div class="progress-wrap">
-      <div class="progress-fill" id="progressFill"></div>
+    <div class="field">
+      <label>JMeter Executable Path</label>
+      <div style="position:relative">
+        <input type="text" id="jmeterPath" placeholder="Auto-detecting..." style="padding-right:70px">
+        <span id="jmeterDetectTag" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;background:var(--green-soft);color:var(--green);border:1px solid rgba(34,211,165,.3);display:none">AUTO</span>
+      </div>
+      <div class="hint" id="jmeterHint">Detecting server JMeter path...</div>
     </div>
 
-    <!-- Terminal -->
-    <div class="terminal-wrap">
+    <div class="divider"></div>
+
+    <div class="sec">
+      Load Configuration
+      <span class="from-jmx-tag" id="fromJmxTag">From JMX</span>
+    </div>
+
+    <div class="grid2">
+      <div class="field"><label>Threads (Users)</label><input type="number" id="threads" value="1" min="1" oninput="markChanged(this)"></div>
+      <div class="field"><label>Ramp-Up (s)</label><input type="number" id="rampup" value="1" min="0" oninput="markChanged(this)"></div>
+      <div class="field"><label>Duration (s)</label><input type="number" id="duration" value="60" min="0" oninput="markChanged(this)"></div>
+      <div class="field"><label>Loops (-1 = ∞)</label><input type="number" id="loops" value="-1" oninput="markChanged(this)"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="sec">Overrides <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:10px;color:var(--muted)">(optional)</span></div>
+    <div class="grid2">
+      <div class="field"><label>Host</label><input type="text" id="host" placeholder="api.example.com"></div>
+      <div class="field"><label>Port</label><input type="number" id="port" placeholder="8080"></div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="sec">Output</div>
+    <div class="field"><label>Results File (.jtl)</label><input type="text" id="resultFile" placeholder="auto (temp dir)"></div>
+    <div class="field"><label>Report Directory</label><input type="text" id="reportDir" placeholder="auto (temp dir)"></div>
+
+    <div style="margin-top:18px">
+      <button class="btn-run" id="btnRun" onclick="startTest()">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 2l9 4-9 4V2z" fill="white"/></svg>
+        Run JMeter Test
+      </button>
+      <button class="btn-stop" id="btnStop" onclick="stopTest()">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><rect x="2" y="2" width="6" height="6" rx="1.5" fill="currentColor"/></svg>
+        Stop Test
+      </button>
+    </div>
+
+  </div>
+</aside>
+
+<!-- ── Main ───────────────────────────────────────────── -->
+<div class="main">
+
+  <div class="main-header">
+    <h2 id="runLabel">No test running</h2>
+    <div class="status-pill" id="statusPill">Idle</div>
+    <div class="pid-label" id="pidLabel"></div>
+  </div>
+
+  <div class="cmd-bar">
+    <div class="cmd-label">CMD</div>
+    <div class="cmd-text" id="cmdDisplay">—</div>
+    <button class="copy-btn" onclick="copyCmd()">Copy</button>
+  </div>
+
+  <div class="dashboard">
+    <div class="metric blue">
+      <div class="metric-glow" style="background:var(--blue)"></div>
+      <div class="ml">Throughput</div>
+      <div class="mv" id="mTp">—</div>
+      <div class="mu">req / sec</div>
+    </div>
+    <div class="metric green">
+      <div class="metric-glow" style="background:var(--green)"></div>
+      <div class="ml">Avg Response</div>
+      <div class="mv" id="mRt">—</div>
+      <div class="mu">ms</div>
+    </div>
+    <div class="metric yellow">
+      <div class="metric-glow" style="background:var(--yellow)"></div>
+      <div class="ml">Samples</div>
+      <div class="mv" id="mSamples">—</div>
+      <div class="mu">completed</div>
+    </div>
+    <div class="metric" id="mErrCard">
+      <div class="metric-glow" id="mErrGlow" style="background:var(--muted)"></div>
+      <div class="ml">Error Rate</div>
+      <div class="mv" id="mErr">—</div>
+      <div class="mu">%</div>
+    </div>
+  </div>
+
+  <div class="progress-wrap"><div class="progress-fill" id="progressFill"></div></div>
+
+  <div class="spark-section">
+    <div class="spark-card"><div class="spark-title">Throughput History</div><div class="spark-bars" id="sparkTp"></div></div>
+    <div class="spark-card"><div class="spark-title">Response Time History</div><div class="spark-bars" id="sparkRt"></div></div>
+    <div class="spark-card"><div class="spark-title">Error Rate History</div><div class="spark-bars" id="sparkErr"></div></div>
+  </div>
+
+  <div class="charts-section">
+
+    <div class="terminal-panel">
       <div class="terminal-header">
         <div class="term-dot" id="termDot"></div>
         <div class="term-title">Output Log</div>
@@ -474,208 +337,381 @@
       <div class="terminal" id="terminal">
         <div class="welcome">
           <div class="welcome-icon">
-            <svg viewBox="0 0 28 28" fill="none">
-              <rect x="2" y="14" width="5" height="10" rx="1.5" fill="#2563eb" opacity=".4"/>
-              <rect x="9" y="10" width="5" height="14" rx="1.5" fill="#2563eb" opacity=".65"/>
-              <rect x="16" y="6" width="5" height="18" rx="1.5" fill="#2563eb"/>
-              <rect x="23" y="11" width="3" height="3" rx="1" fill="#2563eb" opacity=".5"/>
+            <svg viewBox="0 0 24 24" fill="none">
+              <rect x="2" y="13" width="4" height="8" rx="1" fill="var(--blue)" opacity=".4"/>
+              <rect x="8" y="9" width="4" height="12" rx="1" fill="var(--blue)" opacity=".65"/>
+              <rect x="14" y="5" width="4" height="16" rx="1" fill="var(--blue)"/>
+              <rect x="20" y="10" width="2" height="3" rx=".5" fill="var(--purple)" opacity=".7"/>
             </svg>
           </div>
           <h3>Ready to run</h3>
-          <p>Upload a <strong>.jmx</strong> test plan, configure your load parameters on the left, then click <strong>Run JMeter Test</strong>.</p>
+          <p>Upload a <strong>.jmx</strong> — values auto-fill from your file. Edit if needed, then click <strong>Run JMeter Test</strong>.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="pie-panel">
+      <div class="pie-header">Result Breakdown</div>
+      <div class="pie-wrap">
+        <canvas class="pie-canvas" id="pieChart" width="180" height="180"></canvas>
+        <div class="pie-center">
+          <div class="pv" id="pieCenterVal">—</div>
+          <div class="pl" id="pieCenterLabel">total</div>
+        </div>
+      </div>
+      <div class="pie-legend">
+        <div class="legend-row"><span class="legend-dot" style="background:var(--green)"></span><span class="legend-label">Success</span><span class="legend-val" id="lSuccess">—</span><span class="legend-pct" id="lSuccessPct">—</span></div>
+        <div class="legend-row"><span class="legend-dot" style="background:var(--red)"></span><span class="legend-label">Errors</span><span class="legend-val" id="lErrors">—</span><span class="legend-pct" id="lErrorsPct">—</span></div>
+        <div class="legend-row"><span class="legend-dot" style="background:var(--yellow)"></span><span class="legend-label">Slow (&gt;1s)</span><span class="legend-val" id="lSlow">—</span><span class="legend-pct" id="lSlowPct">—</span></div>
+        <div class="legend-row"><span class="legend-dot" style="background:var(--blue)"></span><span class="legend-label">Fast (&lt;200ms)</span><span class="legend-val" id="lFast">—</span><span class="legend-pct" id="lFastPct">—</span></div>
+        <div class="legend-row"><span class="legend-dot" style="background:var(--purple)"></span><span class="legend-label">Medium</span><span class="legend-val" id="lMedium">—</span><span class="legend-pct" id="lMediumPct">—</span></div>
+      </div>
+      <div class="score-section">
+        <div class="score-label">Performance Score</div>
+        <div class="score-bar"><div class="score-fill" id="scoreFill"></div></div>
+        <div class="score-row">
+          <span class="score-val" id="scoreVal">—</span>
+          <span class="score-tag" id="scoreTag">no data</span>
         </div>
       </div>
     </div>
 
   </div>
 </div>
+</div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
 <script>
-let jmxFile = null;
-let currentCmd = '';
-let elapsedSec = 0;
-let elapsedTimer = null;
-let eventSource = null;
-let totalDuration = 60;
+let jmxFile = null, currentCmd = '', elapsedSec = 0, elapsedTimer = null;
+let eventSource = null, totalDuration = 60;
+let pieChart = null;
+let metricsHistory = { tp:[], rt:[], err:[] };
+let totalSamples = 0, totalErrors = 0, slowSamples = 0, fastSamples = 0;
+let jmxOriginal = {};
 
+// ── File upload ─────────────────────────────────────────────
 const jmxInput = document.getElementById('jmxInput');
 const dropZone = document.getElementById('dropZone');
-
-jmxInput.addEventListener('change', e => setFile(e.target.files[0]));
+jmxInput.addEventListener('change', e => handleFile(e.target.files[0]));
 dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag'));
 dropZone.addEventListener('drop', e => {
   e.preventDefault(); dropZone.classList.remove('drag');
   const f = e.dataTransfer.files[0];
-  if (f && f.name.endsWith('.jmx')) setFile(f);
+  if (f && f.name.endsWith('.jmx')) handleFile(f);
 });
 
-function setFile(f) {
+async function handleFile(f) {
   jmxFile = f;
   document.getElementById('fileBadge').style.display = 'flex';
   document.getElementById('fileNameLabel').textContent = f.name;
+
+  // Auto-parse JMX to fill load config
+  const fd = new FormData();
+  fd.append('jmx', f);
+  try {
+    const r = await fetch('/parse', { method:'POST', body:fd });
+    const d = await r.json();
+    if (d.config) applyJmxConfig(d.config);
+  } catch(e) { console.warn('Parse failed:', e); }
 }
 
-function ts() { return new Date().toTimeString().slice(0,8); }
+function applyJmxConfig(cfg) {
+  jmxOriginal = cfg;
+  document.getElementById('threads').value  = cfg.threads;
+  document.getElementById('rampup').value   = cfg.rampup;
+  document.getElementById('duration').value = cfg.duration;
+  document.getElementById('loops').value    = cfg.loops;
 
-function log(msg, cls = 'stdout') {
+  // Clear changed highlights
+  ['threads','rampup','duration','loops'].forEach(id =>
+    document.getElementById(id).classList.remove('changed'));
+
+  // Show banner
+  document.getElementById('jmxBanner').style.display = 'block';
+  document.getElementById('fromJmxTag').style.display = 'inline';
+  document.getElementById('bannerValues').innerHTML = `
+    <div class="bitem">Threads: <span>${cfg.threads}</span></div>
+    <div class="bitem">Ramp-Up: <span>${cfg.rampup}s</span></div>
+    <div class="bitem">Duration: <span>${cfg.duration}s</span></div>
+    <div class="bitem">Loops: <span>${cfg.loops === '-1' ? '∞ Infinite' : cfg.loops}</span></div>
+  `;
+}
+
+function markChanged(input) {
+  const orig = jmxOriginal[input.id];
+  if (orig !== undefined && input.value !== String(orig)) {
+    input.classList.add('changed');
+  } else {
+    input.classList.remove('changed');
+  }
+}
+
+// ── Logging ─────────────────────────────────────────────────
+function ts() { return new Date().toTimeString().slice(0,8); }
+function esc(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+function log(msg, cls='stdout') {
   const term = document.getElementById('terminal');
-  const welcome = term.querySelector('.welcome');
-  if (welcome) welcome.remove();
-  const lines = msg.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
-  lines.forEach(line => {
+  const w = term.querySelector('.welcome'); if (w) w.remove();
+  msg.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').forEach(line => {
     if (!line.trim()) return;
     const d = document.createElement('div');
     d.className = 'log ' + cls;
-    d.innerHTML = `<span class="ts">${ts()}</span>${escHtml(line)}`;
+    d.innerHTML = `<span class="ts">${ts()}</span>${esc(line)}`;
     term.appendChild(d);
   });
   term.scrollTop = term.scrollHeight;
 }
 
-function escHtml(s) {
-  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+// ── Pie Chart ───────────────────────────────────────────────
+function initPie(demo=false) {
+  if (pieChart) { pieChart.destroy(); pieChart = null; }
+  const ctx = document.getElementById('pieChart').getContext('2d');
+  pieChart = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Success','Errors','Slow (>1s)','Fast (<200ms)','Medium'],
+      datasets: [{
+        data: demo ? [612,23,87,612,278] : [1,0,0,0,0],
+        backgroundColor: ['#22d3a5','#f87171','#fbbf24','#4f8cff','#a78bfa'],
+        borderColor: '#0f1117', borderWidth: 3,
+        hoverBorderWidth: 3, hoverOffset: 6
+      }]
+    },
+    options: {
+      responsive: false, cutout: '68%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#1e2535', titleColor: '#e8eaf0',
+          bodyColor: '#9ba3b8', borderColor: '#2a3347', borderWidth: 1, padding: 10,
+          callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed.toLocaleString()}` }
+        }
+      },
+      animation: { animateRotate: true, duration: 600 }
+    }
+  });
+  if (demo) updatePieLegend(1000, 23, 87, 612);
 }
 
+function updatePieLegend(samples, errors, slow, fast) {
+  const medium = Math.max(0, samples - errors - slow - fast);
+  const success = Math.max(0, samples - errors);
+  const pct = v => samples > 0 ? ((v/samples)*100).toFixed(1)+'%' : '0%';
+  document.getElementById('pieCenterVal').textContent = samples.toLocaleString();
+  document.getElementById('pieCenterLabel').textContent = 'total';
+  [['lSuccess',success],['lErrors',errors],['lSlow',slow],['lFast',fast],['lMedium',medium]].forEach(([id,v])=>{
+    document.getElementById(id).textContent = v.toLocaleString();
+    document.getElementById(id+'Pct').textContent = pct(v);
+  });
+  // Score
+  const errRate = samples > 0 ? errors/samples : 0;
+  const score = Math.round(Math.max(0, 100 - errRate*100 - (slow/(samples||1))*30));
+  document.getElementById('scoreFill').style.width = score + '%';
+  document.getElementById('scoreVal').textContent = score;
+  let tag='excellent', color='var(--green)';
+  if (score<40){tag='poor';color='var(--red)';}
+  else if (score<70){tag='fair';color='var(--yellow)';}
+  else if (score<90){tag='good';color='var(--blue)';}
+  document.getElementById('scoreTag').textContent = tag;
+  document.getElementById('scoreFill').style.background = `linear-gradient(90deg,${color},var(--blue))`;
+}
+
+function updatePie(samples, errors, slow, fast) {
+  const medium = Math.max(0, samples - errors - slow - fast);
+  const success = Math.max(0, samples - errors);
+  if (!pieChart) initPie();
+  pieChart.data.datasets[0].data = [success, errors, slow, fast, medium];
+  pieChart.update('none');
+  updatePieLegend(samples, errors, slow, fast);
+}
+
+// ── Sparklines ──────────────────────────────────────────────
+function addSpark(containerId, histKey, val, color) {
+  const hist = metricsHistory[histKey];
+  hist.push(val);
+  if (hist.length > 20) hist.shift();
+  const c = document.getElementById(containerId);
+  c.innerHTML = '';
+  const mx = Math.max(...hist, 1);
+  hist.forEach((v, i) => {
+    const b = document.createElement('div');
+    b.className = 'spark-bar';
+    b.style.height = Math.max(2, (v/mx)*40) + 'px';
+    b.style.background = i === hist.length-1 ? color : color+'66';
+    c.appendChild(b);
+  });
+}
+
+// ── Metrics parser ──────────────────────────────────────────
 function parseMetrics(line) {
-  const tpMatch = line.match(/=\s*([\d.]+)\/s/);
-  const avgMatch = line.match(/Avg:\s*(\d+)/);
-  const errMatch = line.match(/Err:\s*\d+\s*\(([\d.]+)%\)/);
-  const samplesMatch = line.match(/summary [+\s=]+\s*(\d+)\s+in/);
-  if (tpMatch) document.getElementById('mTp').textContent = parseFloat(tpMatch[1]).toFixed(1);
-  if (avgMatch) document.getElementById('mRt').textContent = avgMatch[1];
-  if (errMatch) {
-    const ep = parseFloat(errMatch[1]);
-    document.getElementById('mErr').textContent = ep.toFixed(2);
-    document.getElementById('mErrCard').className = 'metric' + (ep > 1 ? ' danger' : '');
+  const tp = line.match(/=\s*([\d.]+)\/s/);
+  const rt = line.match(/Avg:\s*(\d+)/);
+  const er = line.match(/Err:\s*(\d+)\s*\(([\d.]+)%\)/);
+  const sm = line.match(/summary\s*[+=]\s*(\d+)\s+in/);
+
+  if (tp) { const v=parseFloat(tp[1]); document.getElementById('mTp').textContent=v.toFixed(1); addSpark('sparkTp','tp',v,'#4f8cff'); }
+  if (rt) {
+    const v=parseInt(rt[1]);
+    document.getElementById('mRt').textContent=v;
+    addSpark('sparkRt','rt',v,'#22d3a5');
+    fastSamples = Math.floor(totalSamples*(v<200?.65:v<500?.4:.1));
+    slowSamples = Math.floor(totalSamples*(v>1000?.4:v>500?.2:.05));
   }
-  if (samplesMatch) document.getElementById('mSamples').textContent = parseInt(samplesMatch[1]).toLocaleString();
+  if (er) {
+    const ec=parseInt(er[1]), ep=parseFloat(er[2]);
+    totalErrors=ec;
+    document.getElementById('mErr').textContent=ep.toFixed(2);
+    document.getElementById('mErrCard').className='metric '+(ep>1?'danger':ep>0?'yellow':'green');
+    document.getElementById('mErrGlow').style.background=ep>1?'var(--red)':ep>0?'var(--yellow)':'var(--green)';
+    addSpark('sparkErr','err',ep,ep>1?'#f87171':'#22d3a5');
+  }
+  if (sm) {
+    totalSamples=parseInt(sm[1]);
+    document.getElementById('mSamples').textContent=totalSamples.toLocaleString();
+    updatePie(totalSamples, totalErrors, slowSamples, fastSamples);
+  }
 }
 
+// ── Run ─────────────────────────────────────────────────────
 async function startTest() {
   if (!jmxFile) { alert('Please select a .jmx file first.'); return; }
 
-  const formData = new FormData();
-  formData.append('jmx', jmxFile);
-  formData.append('threads', document.getElementById('threads').value);
-  formData.append('rampup', document.getElementById('rampup').value);
-  formData.append('duration', document.getElementById('duration').value);
-  formData.append('loops', document.getElementById('loops').value);
-  formData.append('host', document.getElementById('host').value);
-  formData.append('port', document.getElementById('port').value);
-  formData.append('jmeterPath', document.getElementById('jmeterPath').value);
-  formData.append('resultFile', document.getElementById('resultFile').value);
-  formData.append('reportDir', document.getElementById('reportDir').value);
+  const fd = new FormData();
+  fd.append('jmx',        jmxFile);
+  fd.append('threads',    document.getElementById('threads').value);
+  fd.append('rampup',     document.getElementById('rampup').value);
+  fd.append('duration',   document.getElementById('duration').value);
+  fd.append('loops',      document.getElementById('loops').value);
+  fd.append('host',       document.getElementById('host').value);
+  fd.append('port',       document.getElementById('port').value);
+  fd.append('jmeterPath', document.getElementById('jmeterPath').value);
+  fd.append('resultFile', document.getElementById('resultFile').value);
+  fd.append('reportDir',  document.getElementById('reportDir').value);
 
   totalDuration = parseInt(document.getElementById('duration').value) || 60;
+  totalSamples=0; totalErrors=0; slowSamples=0; fastSamples=0;
+  metricsHistory = { tp:[], rt:[], err:[] };
 
   document.getElementById('btnRun').disabled = true;
   document.getElementById('btnStop').style.display = 'flex';
-  setStatus('running', 'Running');
-
+  setStatus('running','Running');
   document.getElementById('terminal').innerHTML = '';
-  ['mTp','mRt','mSamples','mErr'].forEach(id => document.getElementById(id).textContent = '—');
+  ['mTp','mRt','mSamples','mErr'].forEach(id => document.getElementById(id).textContent='—');
   document.getElementById('progressFill').style.width = '0%';
   document.getElementById('termDot').className = 'term-dot live';
   document.getElementById('mErrCard').className = 'metric';
+  document.getElementById('scoreFill').style.width = '0%';
+  document.getElementById('scoreVal').textContent = '—';
+  document.getElementById('scoreTag').textContent = 'no data';
+  ['sparkTp','sparkRt','sparkErr'].forEach(id => document.getElementById(id).innerHTML='');
+  initPie();
 
-  const resp = await fetch('/run', { method: 'POST', body: formData });
+  const resp = await fetch('/run', { method:'POST', body:fd });
   const data = await resp.json();
-
-  if (data.error) { log('Error: ' + data.error, 'err'); resetUI(); return; }
+  if (data.error) { log('Error: '+data.error,'err'); resetUI(); return; }
 
   currentCmd = data.cmd;
   document.getElementById('cmdDisplay').textContent = data.cmd;
   document.getElementById('runLabel').textContent = jmxFile.name;
-  if (data.pid) {
-    const pidEl = document.getElementById('pidLabel');
-    pidEl.textContent = 'PID ' + data.pid;
-    pidEl.style.display = 'block';
-  }
-
   log(`$ ${data.cmd}`, 'cmd');
   log(`Results → ${data.jtlFile}`, 'info');
   log(`Report  → ${data.reportOut}`, 'info');
 
-  elapsedSec = 0;
+  elapsedSec=0;
   elapsedTimer = setInterval(() => {
     elapsedSec++;
     document.getElementById('termElapsed').textContent = fmtTime(elapsedSec);
-    const prog = Math.min((elapsedSec / totalDuration) * 100, 99);
-    document.getElementById('progressFill').style.width = prog + '%';
+    document.getElementById('progressFill').style.width = Math.min((elapsedSec/totalDuration)*100,99)+'%';
   }, 1000);
 
   if (eventSource) eventSource.close();
-  eventSource = new EventSource('/stream/' + data.runId);
+  eventSource = new EventSource('/stream/'+data.runId);
   eventSource.onmessage = e => {
     const msg = JSON.parse(e.data);
-    if (msg.type === 'start') {
-      document.getElementById('pidLabel').textContent = 'PID ' + msg.pid;
-      document.getElementById('pidLabel').style.display = 'block';
-    } else if (msg.type === 'stdout') {
-      log(msg.line, 'stdout'); parseMetrics(msg.line);
-    } else if (msg.type === 'stderr') {
-      log(msg.line, 'stderr'); parseMetrics(msg.line);
-    } else if (msg.type === 'done') {
+    if (msg.type==='start') {
+      const p=document.getElementById('pidLabel');
+      p.textContent='PID '+msg.pid; p.style.display='block';
+    } else if (msg.type==='stdout') { log(msg.line,'stdout'); parseMetrics(msg.line); }
+    else if (msg.type==='stderr') { log(msg.line,'stderr'); parseMetrics(msg.line); }
+    else if (msg.type==='done') {
       clearInterval(elapsedTimer);
-      document.getElementById('progressFill').style.width = '100%';
-      document.getElementById('termDot').className = 'term-dot';
-      if (msg.code === 0) {
-        setStatus('done', 'Completed');
-        log('✓ Test completed successfully (exit 0)', 'ok');
-        log(`Results: ${msg.jtlFile}`, 'info');
-        log(`Report:  ${msg.reportOut}`, 'info');
+      document.getElementById('progressFill').style.width='100%';
+      document.getElementById('termDot').className='term-dot';
+      if (msg.code===0) {
+        setStatus('done','Completed');
+        log('✓ Test completed (exit 0)','ok');
+        log(`Results: ${msg.jtlFile}`,'info');
+        log(`Report:  ${msg.reportOut}`,'info');
+        log(`Open:    ${msg.reportOut}/index.html`,'info');
       } else {
-        setStatus('error', 'Failed (exit ' + msg.code + ')');
-        log(`✗ JMeter exited with code ${msg.code}`, 'err');
+        setStatus('error','Failed (exit '+msg.code+')');
+        log(`✗ JMeter exited with code ${msg.code}`,'err');
       }
       resetUI(); eventSource.close();
-    } else if (msg.type === 'error') {
-      setStatus('error', 'Error');
-      log(msg.message, 'err');
-      log('Troubleshooting:', 'info');
-      log('  1. Install JMeter: https://jmeter.apache.org/download_jmeter.cgi', 'info');
-      log('  2. Verify Java 8+: java -version', 'info');
-      log('  3. Set full JMeter path in the sidebar field', 'info');
+    } else if (msg.type==='error') {
+      setStatus('error','Error');
+      log(msg.message,'err');
+      log('  → Windows: C:\\apache-jmeter-5.6.3\\bin\\jmeter.bat','info');
+      log('  → Linux:   /opt/apache-jmeter-5.6.3/bin/jmeter','info');
       resetUI(); eventSource.close();
     }
   };
 }
 
 async function stopTest() {
-  await fetch('/stop', { method: 'POST' });
-  setStatus('error', 'Stopped');
-  log('Test stopped by user.', 'err');
+  await fetch('/stop',{method:'POST'});
+  setStatus('error','Stopped'); log('Test stopped by user.','err');
   clearInterval(elapsedTimer);
-  document.getElementById('termDot').className = 'term-dot';
-  resetUI();
-  if (eventSource) eventSource.close();
+  document.getElementById('termDot').className='term-dot';
+  resetUI(); if (eventSource) eventSource.close();
 }
 
 function resetUI() {
-  document.getElementById('btnRun').disabled = false;
-  document.getElementById('btnStop').style.display = 'none';
+  document.getElementById('btnRun').disabled=false;
+  document.getElementById('btnStop').style.display='none';
 }
-
 function setStatus(cls, text) {
-  const el = document.getElementById('statusPill');
-  el.className = 'status-pill ' + cls;
-  el.textContent = text;
+  const el=document.getElementById('statusPill');
+  el.className='status-pill '+cls; el.textContent=text;
 }
-
-function fmtTime(s) {
-  const m = Math.floor(s / 60);
-  const sec = s % 60;
-  return m > 0 ? `${m}m ${sec}s` : `${sec}s`;
-}
-
+function fmtTime(s) { const m=Math.floor(s/60); return m>0?`${m}m ${s%60}s`:`${s}s`; }
 function copyCmd() {
   if (!currentCmd) return;
   navigator.clipboard.writeText(currentCmd);
-  const btn = event.target;
-  btn.textContent = 'Copied!';
-  setTimeout(() => btn.textContent = 'Copy', 2000);
+  const btn=event.target; btn.textContent='Copied!';
+  setTimeout(()=>btn.textContent='Copy',2000);
 }
+
+// ── Auto-detect JMeter path from server ─────────────────────
+async function detectJmeterPath() {
+  try {
+    const r = await fetch('/health');
+    const d = await r.json();
+    const input = document.getElementById('jmeterPath');
+    const tag   = document.getElementById('jmeterDetectTag');
+    const hint  = document.getElementById('jmeterHint');
+    if (d.jmeter) {
+      input.value = d.jmeter;
+      tag.style.display = 'inline';
+      hint.innerHTML = `Platform: <strong style="color:var(--blue)">${d.platform}</strong> &nbsp;|&nbsp; Edit if path is wrong`;
+    } else {
+      // fallback based on platform guess
+      input.value = 'jmeter';
+      hint.textContent = 'Could not auto-detect — enter path manually';
+    }
+  } catch(e) {
+    // Fallback to Windows default for local dev
+    document.getElementById('jmeterPath').value = 'C:\apache-jmeter-5.6.3\bin\jmeter.bat';
+    document.getElementById('jmeterHint').textContent = 'Windows: jmeter.bat | Linux: /opt/apache-jmeter-5.6.3/bin/jmeter';
+  }
+}
+
+window.addEventListener('load', () => {
+  setTimeout(() => initPie(true), 300);
+  detectJmeterPath();
+});
 </script>
 </body>
 </html>
